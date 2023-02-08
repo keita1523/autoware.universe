@@ -861,6 +861,7 @@ PathWithLaneId::SharedPtr BehaviorPathPlannerNode::getPath(
   const BehaviorModuleOutput & bt_output, const std::shared_ptr<PlannerData> planner_data)
 {
   // TODO(Horibe) do some error handling when path is not available.
+RCLCPP_INFO(rclcpp::get_logger("my_test"), "BPP getPath LINE = %d", __LINE__);
 
   auto path = bt_output.path ? bt_output.path : planner_data->prev_output_path;
   path->header = planner_data->route_handler->getRouteHeader();
@@ -870,12 +871,12 @@ PathWithLaneId::SharedPtr BehaviorPathPlannerNode::getPath(
 
   PathWithLaneId connected_path;
   const auto module_status_ptr_vec = bt_manager_->getModulesStatus();
-  if (skipSmoothGoalConnection(module_status_ptr_vec)) {
-    connected_path = *path;
-  } else {
-    connected_path = modifyPathForSmoothGoalConnection(*path);
-  }
-
+  // if (skipSmoothGoalConnection(module_status_ptr_vec)) {
+  //   connected_path = *path;
+  // } else {
+  //   connected_path = modifyPathForSmoothGoalConnection(*path);
+  // }
+  connected_path = *path;
   const auto resampled_path = util::resamplePathWithSpline(
     connected_path, planner_data_->parameters.path_interval,
     keepInputPoints(module_status_ptr_vec));
