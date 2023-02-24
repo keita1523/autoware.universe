@@ -1,0 +1,11 @@
+<launch>
+  <arg name="determination_control_values_param_path" default="$(find-pkg-share determination_control_values)/config/determination_control_values.param.yaml"/>
+
+  <node pkg="determination_control_values" exec="determination_control_values_node" name="determination_control_values" output="screen">
+  	<param from="$(var determination_control_values_param_path)"/>
+  	<remap from="~/input/joy" to="/whill/controller/joy"/>
+  	<remap from="~/input/objects" to="/perception/object_recognition/objects"/>
+    <remap from="~/output/vehicle_cmd" to="/whill/control_cmd/vehicle_cmd"/>
+  </node>
+
+</launch>
