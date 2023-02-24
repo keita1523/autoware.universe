@@ -383,7 +383,7 @@ PlannerPlugin::LaneletRoute DefaultPlanner::plan(const RoutePoints & points)
 
   if (!is_goal_valid(points.back(), all_route_lanelets)) {
     RCLCPP_WARN(logger, "Goal is not valid! Please check position and angle of goal_pose");
-    return route_msg;
+    // return route_msg;
   }
 
   if (route_handler_.isRouteLooped(route_sections)) {
