@@ -65,9 +65,13 @@ bool DeterminationControlValues::transCoordinate(
     geometry_msgs::msg::TransformStamped transform;
     transform = tf_buffer.lookupTransform(
       header.frame_id, "velodyne_top", header.stamp, rclcpp::Duration::from_seconds(0.1));
-    object_.lidar_position_.x = transform.transform.translation.x;
-    object_.lidar_position_.y = transform.transform.translation.y;
-
+    object_.lidar_pose_.position.x = transform.transform.translation.x;
+    object_.lidar_pose_.position.y = transform.transform.translation.y;
+    object_.lidar_pose_.position.z = transform.transform.translation.z;
+    object_.lidar_pose_.orientation.x = transform.transform.rotation.x;
+    object_.lidar_pose_.orientation.y = transform.transform.rotation.y;
+    object_.lidar_pose_.orientation.z = transform.transform.rotation.z;
+    object_.lidar_pose_.orientation.w = transform.transform.rotation.w;
     return true;
   } catch (tf2::TransformException & ex) {
     return false;
@@ -83,13 +87,18 @@ void DeterminationControlValues::detectionResultCallback(const autoware_auto_per
 		emagency_stop = true;
 	}
   for(auto object: msg.objects){
-    object_.obstacle_position_ = object.kinematics.initial_pose_with_covariance.pose.position;
-    object_.obstacle_position_.x -= object_.lidar_position_.x;
-    object_.obstacle_position_.y -= object_.lidar_position_.y;
-    object_.distance_ = std::sqrt(object_.obstacle_position_.x*object_.obstacle_position_.x+
-                                  object_.obstacle_position_.y*object_.obstacle_position_.y);
+    object_.obstacle_pose_ = object.kinematics.initial_pose_with_covariance.pose;
+    object_.obstacle_pose_.position.x -= object_.lidar_pose_.position.x;
+    object_.obstacle_pose_.position.y -= object_.lidar_pose_.position.y;
+    object_.obstacle_pose_.position.z -= object_.lidar_pose_.position.z;
+    object_.obstacle_pose_.orientation.x -= object_.lidar_pose_.orientation.x;
+    object_.obstacle_pose_.orientation.y -= object_.lidar_pose_.orientation.y;
+    object_.obstacle_pose_.orientation.z -= object_.lidar_pose_.orientation.z;
+    object_.obstacle_pose_.orientation.w -= object_.lidar_pose_.orientation.w;
+    object_.distance_ = std::sqrt(object_.obstacle_pose_.position.x*object_.obstacle_pose_.position.x+
+                                  object_.obstacle_pose_.position.y*object_.obstacle_pose_.position.y);
 
-    RCLCPP_INFO(rclcpp::get_logger("check_test"), "dis:%lf",object_.distance_);//test
+    RCLCPP_INFO(rclcpp::get_logger("check_test"), "dis:%9lf, posx:%9lf, posy:%9lf, posz:%9lf, ortx:%9lf, orty:%9lf, ortz:%9lf, ortw:%9lf",object_.distance_, object_.obstacle_pose_.position.x, object_.obstacle_pose_.position.y, object_.obstacle_pose_.position.z, object_.obstacle_pose_.orientation.x, object_.obstacle_pose_.orientation.y, object_.obstacle_pose_.orientation.z, object_.obstacle_pose_.orientation.w);//test
 
     if(boundary_condition_.detection_margin_min_ < object_.distance_ && boundary_condition_.detection_margin_max_  > object_.distance_){
       emagency_stop = true;
@@ -111,11 +120,12 @@ void DeterminationControlValues::controlWhillVehicle(sensor_msgs::msg::Joy joy_)
   if(emagency_stop){
     joy_.axes[0] = 0.0; //　Longitudinal direction
     joy_.axes[1] = 0.0; //　horizon direction
+    RCLCPP_INFO(rclcpp::get_logger("my_test"), "emagency_stop is '%d'", emagency_stop);
   }
 
   //subscribe
 	pub_control_status_->publish(joy_);
-  RCLCPP_INFO(rclcpp::get_logger("my_test"), "emagency_stop is '%d'", emagency_stop);
+  //RCLCPP_INFO(rclcpp::get_logger("my_test"), "emagency_stop is '%d'", emagency_stop);
   return;
 }
 

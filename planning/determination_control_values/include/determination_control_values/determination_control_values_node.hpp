@@ -54,8 +54,8 @@ private:
 	tf2_ros::TransformListener tf_listener_{tf_buffer_};
 
   struct Object{
-    geometry_msgs::msg::Point obstacle_position_;
-    geometry_msgs::msg::Point lidar_position_;
+    geometry_msgs::msg::Pose obstacle_pose_;
+    geometry_msgs::msg::Pose lidar_pose_;
     double distance_;
   };
   Object object_;
