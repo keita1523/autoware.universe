@@ -28,13 +28,5 @@
         <arg name="use_multithread" value="true"/>
       </include>
     </group>
-
-    <!-- determination control values module -->
-    <!-- <group>
-      <push-ros-namespace namespace="motion_planning"/>
-      <include file="$(find-pkg-share determination_control_values)/launch/determination_control_values.launch.xml">
-      </include>
-    </group> -->
-
   </group>
 </launch>
