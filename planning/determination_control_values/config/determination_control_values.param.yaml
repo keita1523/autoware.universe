@@ -1,0 +1,4 @@
+/**:
+  ros__parameters:
+    detection_margin_min: 1.0
+    detection_margin_max: 100.0
