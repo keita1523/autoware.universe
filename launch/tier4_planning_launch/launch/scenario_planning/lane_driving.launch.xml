@@ -30,11 +30,11 @@
     </group>
 
     <!-- determination control values module -->
-    <group>
+    <!-- <group>
       <push-ros-namespace namespace="motion_planning"/>
       <include file="$(find-pkg-share determination_control_values)/launch/determination_control_values.launch.xml">
       </include>
-    </group>
+    </group> -->
 
   </group>
 </launch>

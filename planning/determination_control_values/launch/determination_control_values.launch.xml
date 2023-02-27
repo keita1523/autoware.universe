@@ -3,9 +3,17 @@
 
   <node pkg="determination_control_values" exec="determination_control_values_node" name="determination_control_values" output="screen">
   	<param from="$(var determination_control_values_param_path)"/>
-  	<remap from="~/input/joy" to="/whill/controller/joy"/>
+  	<remap from="~/input/joy" to="/whill/states/joy"/>
   	<remap from="~/input/objects" to="/perception/object_recognition/objects"/>
-    <remap from="~/output/vehicle_cmd" to="/whill/control_cmd/vehicle_cmd"/>
+    <remap from="~/output/vehicle_cmd" to="/whill/controller/joy"/>
+
+  	<remap from="~/input/whill_odom" to="/whill/odom"/>
+    <remap from="~/output/aw_velocity" to="/vehicle/status/velocity_status"/>
+    <remap from="~/output/aw_steering" to="/vehicle/status/steering_status"/>
   </node>
+
+
+  <node pkg="ros2_whill" exec="whill_modelc_controller" name="whill_modelc_controller" output="screen"></node>
+  <node pkg="ros2_whill" exec="whill_modelc_publisher" name="whill_modelc_publisher" output="screen"></node>
 
 </launch>
