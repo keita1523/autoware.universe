@@ -2,3 +2,7 @@
   ros__parameters:
     detection_margin_min: 1.0
     detection_margin_max: 3.0
+    detection_area_front: 3.0
+    detection_area_rear: 0.0
+    detection_area_left: 2.0
+    detection_area_right: 2.0

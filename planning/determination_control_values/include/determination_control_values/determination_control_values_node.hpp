@@ -63,6 +63,10 @@ private:
   struct BoundaryCondition{
     double detection_margin_max_;
     double detection_margin_min_;
+    double detection_area_front_;
+    double detection_area_rear_;
+    double detection_area_left_;
+    double detection_area_right_;
   };
   BoundaryCondition boundary_condition_;
 

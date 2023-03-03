@@ -20,6 +20,10 @@ DeterminationControlValues::DeterminationControlValues(const rclcpp::NodeOptions
   RCLCPP_INFO(rclcpp::get_logger("my_test"), "detemination_launched");
   boundary_condition_.detection_margin_min_= declare_parameter("detection_margin_min",1.0);
   boundary_condition_.detection_margin_max_= declare_parameter("detection_margin_max",10.0);
+  boundary_condition_.detection_area_front_= declare_parameter("detection_area_front",10.0);
+  boundary_condition_.detection_area_rear_= declare_parameter("detection_area_rear",4.0);
+  boundary_condition_.detection_area_left_= declare_parameter("detection_area_left",4.0);
+  boundary_condition_.detection_area_right_= declare_parameter("detection_area_right",4.0);
   //set Subscriber
   sub_detection_results_ = this->create_subscription<autoware_auto_perception_msgs::msg::PredictedObjects>(
 		"~/input/objects", 1,
@@ -68,10 +72,7 @@ bool DeterminationControlValues::transCoordinate(
     object_.lidar_pose_.position.x = transform.transform.translation.x;
     object_.lidar_pose_.position.y = transform.transform.translation.y;
     object_.lidar_pose_.position.z = transform.transform.translation.z;
-    object_.lidar_pose_.orientation.x = transform.transform.rotation.x;
-    object_.lidar_pose_.orientation.y = transform.transform.rotation.y;
-    object_.lidar_pose_.orientation.z = transform.transform.rotation.z;
-    object_.lidar_pose_.orientation.w = transform.transform.rotation.w;
+    object_.lidar_pose_.orientation = transform.transform.rotation;
     return true;
   } catch (tf2::TransformException & ex) {
     return false;
@@ -86,22 +87,31 @@ void DeterminationControlValues::detectionResultCallback(const autoware_auto_per
     RCLCPP_INFO(rclcpp::get_logger("my_test"), "Failed to trans coordinate use topics as is.");
 		emagency_stop = true;
 	}
+  tier4_autoware_utils::LinearRing2d object_detection_area{};
+  object_detection_area.push_back(tier4_autoware_utils::Point2d{-boundary_condition_.detection_area_rear_,  boundary_condition_.detection_area_left_});
+  object_detection_area.push_back(tier4_autoware_utils::Point2d{ boundary_condition_.detection_area_front_, boundary_condition_.detection_area_left_});
+  object_detection_area.push_back(tier4_autoware_utils::Point2d{ boundary_condition_.detection_area_front_,-boundary_condition_.detection_area_right_});
+  object_detection_area.push_back(tier4_autoware_utils::Point2d{-boundary_condition_.detection_area_rear_, -boundary_condition_.detection_area_right_});
+  object_detection_area.push_back(tier4_autoware_utils::Point2d{-boundary_condition_.detection_area_rear_,  boundary_condition_.detection_area_left_});
+  object_detection_area = tier4_autoware_utils::transformVector(object_detection_area, tier4_autoware_utils::pose2transform(object_.lidar_pose_));
+
   for(auto object: msg.objects){
     object_.obstacle_pose_ = object.kinematics.initial_pose_with_covariance.pose;
     object_.obstacle_pose_.position.x -= object_.lidar_pose_.position.x;
     object_.obstacle_pose_.position.y -= object_.lidar_pose_.position.y;
-    object_.obstacle_pose_.position.z -= object_.lidar_pose_.position.z;
-    object_.obstacle_pose_.orientation.x -= object_.lidar_pose_.orientation.x;
-    object_.obstacle_pose_.orientation.y -= object_.lidar_pose_.orientation.y;
-    object_.obstacle_pose_.orientation.z -= object_.lidar_pose_.orientation.z;
-    object_.obstacle_pose_.orientation.w -= object_.lidar_pose_.orientation.w;
     object_.distance_ = std::sqrt(object_.obstacle_pose_.position.x*object_.obstacle_pose_.position.x+
                                   object_.obstacle_pose_.position.y*object_.obstacle_pose_.position.y);
+    tier4_autoware_utils::Point2d object_point2d{object.kinematics.initial_pose_with_covariance.pose.position.x, object.kinematics.initial_pose_with_covariance.pose.position.y};
 
-    RCLCPP_INFO(rclcpp::get_logger("check_test"), "dis:%9lf, posx:%9lf, posy:%9lf, posz:%9lf, ortx:%9lf, orty:%9lf, ortz:%9lf, ortw:%9lf",object_.distance_, object_.obstacle_pose_.position.x, object_.obstacle_pose_.position.y, object_.obstacle_pose_.position.z, object_.obstacle_pose_.orientation.x, object_.obstacle_pose_.orientation.y, object_.obstacle_pose_.orientation.z, object_.obstacle_pose_.orientation.w);//test
-
-    if(boundary_condition_.detection_margin_min_ < object_.distance_ && boundary_condition_.detection_margin_max_  > object_.distance_){
+    if( (boundary_condition_.detection_margin_min_ < object_.distance_ && boundary_condition_.detection_margin_max_  > object_.distance_) &&
+        (boost::geometry::within(object_point2d, object_detection_area) ) )
+    {
       emagency_stop = true;
+      RCLCPP_WARN(rclcpp::get_logger("check_test"), "dist:%lf,obj:(%9lf,%9lf),lid:(%9lf,%9lf),area:(%9lf,%9lf)(%9lf,%9lf)(%9lf,%9lf)(%9lf,%9lf)",object_.distance_, object_point2d.x(), object_point2d.y(), object_.lidar_pose_.position.x, object_.lidar_pose_.position.y, object_detection_area[0][0], object_detection_area[0][1], object_detection_area[1][0], object_detection_area[1][1], object_detection_area[2][0], object_detection_area[2][1], object_detection_area[3][0], object_detection_area[3][1]); //test
+    }
+    else
+    {
+      RCLCPP_INFO(rclcpp::get_logger("check_test"), "dist:%lf,obj:(%9lf,%9lf),lid:(%9lf,%9lf),area:(%9lf,%9lf)(%9lf,%9lf)(%9lf,%9lf)(%9lf,%9lf)",object_.distance_, object_point2d.x(), object_point2d.y(), object_.lidar_pose_.position.x, object_.lidar_pose_.position.y, object_detection_area[0][0], object_detection_area[0][1], object_detection_area[1][0], object_detection_area[1][1], object_detection_area[2][0], object_detection_area[2][1], object_detection_area[3][0], object_detection_area[3][1]); //test
     }
 
     if(emagency_stop)break;
