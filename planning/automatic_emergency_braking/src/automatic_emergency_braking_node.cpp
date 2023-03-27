@@ -1,4 +1,4 @@
-#include "automatic_emergency_braking_node/automatic_emergency_braking_node_node.hpp"
+#include "automatic_emergency_braking/automatic_emergency_braking_node.hpp"
 
 namespace motion_planning // need to change
 {
@@ -99,10 +99,10 @@ void AutomaticEmergencyBrakingNode::subStopReasons(
   }
   RCLCPP_INFO(rclcpp::get_logger("my_node"), "LINE %d size = %ld", __LINE__, reason_for_obstacle->stop_factors.size());
   auto stop_factor_points = reason_for_obstacle->stop_factors[0].stop_factor_points[0];
+  auto distance = tier4_autoware_utils::calcDistance3d(stop_factor_points, current_pose_.position);
   RCLCPP_INFO(rclcpp::get_logger("my_node"), "LINE stop    x %f y %f z %f", stop_factor_points.x, stop_factor_points.y, stop_factor_points.z);
   RCLCPP_INFO(rclcpp::get_logger("my_node"), "LINE current x %f y %f z %f", current_pose_.position.x, current_pose_.position.y, current_pose_.position.z);
   
-  auto distance = tier4_autoware_utils::calcDistance3d(stop_factor_points, current_pose_.position);
   RCLCPP_INFO(rclcpp::get_logger("my_node"), "LINE %f", distance);
   if (distance > param_.min && distance < param_.max) {
   RCLCPP_INFO(rclcpp::get_logger("my_node"), "LINE %d", __LINE__);

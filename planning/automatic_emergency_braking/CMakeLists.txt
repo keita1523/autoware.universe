@@ -11,7 +11,7 @@ ament_auto_add_library(automatic_emergency_braking SHARED
 target_link_libraries(automatic_emergency_braking)
 
 rclcpp_components_register_node(automatic_emergency_braking
-  PLUGIN "motion_planning::AutowarePackageTemplate"
+  PLUGIN "motion_planning::AutomaticEmergencyBrakingNode"
   EXECUTABLE automatic_emergency_braking_node
 )
 

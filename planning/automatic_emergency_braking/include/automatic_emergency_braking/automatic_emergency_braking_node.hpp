@@ -18,10 +18,10 @@ using sensor_msgs::msg::Joy;
 using Odometry = nav_msgs::msg::Odometry;
 using AwSteering = autoware_auto_vehicle_msgs::msg::SteeringReport;
 using AwVelocity = autoware_auto_vehicle_msgs::msg::VelocityReport;
-class AutowarePackageTemplate : public rclcpp::Node
+class AutomaticEmergencyBrakingNode : public rclcpp::Node
 {
 public:
-  explicit AutowarePackageTemplate(const rclcpp::NodeOptions & node_options);
+  explicit AutomaticEmergencyBrakingNode(const rclcpp::NodeOptions & node_options);
   struct Param
   {
     double min;
