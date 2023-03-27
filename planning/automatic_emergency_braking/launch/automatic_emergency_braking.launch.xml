@@ -1,0 +1,19 @@
+<launch>
+  <arg name="automatic_emergency_braking_param_path" default="$(find-pkg-share automatic_emergency_braking)/config/automatic_emergency_braking.param.yaml"/>
+
+  <node pkg="automatic_emergency_braking" exec="automatic_emergency_braking_node" name="automatic_emergency_braking" output="screen">
+  	<param from="$(var automatic_emergency_braking_param_path)"/>
+		<remap from="~/input/stop_reasons" to="/planning/scenario_planning/status/stop_reasons"/>
+  	<remap from="~/input/joy" to="/whill/states/joy"/>
+    <remap from="~/input/odometry" to="/localization/kinematic_state"/>
+    <remap from="~/output/vehicle_cmd" to="/whill/controller/joy"/>
+
+  	<remap from="~/input/whill_odom" to="/whill/odom"/>
+    <remap from="~/output/aw_velocity" to="/vehicle/status/velocity_status"/>
+    <remap from="~/output/aw_steering" to="/vehicle/status/steering_status"/>
+
+  </node>
+  <node pkg="ros2_whill" exec="whill_modelc_controller" name="whill_modelc_controller" output="screen"></node>
+  <node pkg="ros2_whill" exec="whill_modelc_publisher" name="whill_modelc_publisher" output="screen"></node>
+
+</launch>
