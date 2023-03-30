@@ -54,8 +54,8 @@ private:
 	tf2_ros::TransformListener tf_listener_{tf_buffer_};
 
   struct Object{
-    geometry_msgs::msg::Point obstacle_position_;
-    geometry_msgs::msg::Point lidar_position_;
+    geometry_msgs::msg::Pose obstacle_pose_;
+    geometry_msgs::msg::Pose lidar_pose_;
     double distance_;
   };
   Object object_;
@@ -63,6 +63,10 @@ private:
   struct BoundaryCondition{
     double detection_margin_max_;
     double detection_margin_min_;
+    double detection_area_front_;
+    double detection_area_rear_;
+    double detection_area_left_;
+    double detection_area_right_;
   };
   BoundaryCondition boundary_condition_;
 
