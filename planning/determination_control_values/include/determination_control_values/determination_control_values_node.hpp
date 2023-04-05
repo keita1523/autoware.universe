@@ -14,6 +14,7 @@
 
 // Whill
 #include <sensor_msgs/msg/joy.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
 
 namespace motion_planning
 {
@@ -33,6 +34,7 @@ public:
 
 private:
   void detectionResultCallback(const autoware_auto_perception_msgs::msg::PredictedObjects  msg);
+  void detectionPointsCallback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg);
   void joyStatusCallback(const sensor_msgs::msg::Joy msg);
   void controlWhillVehicle(sensor_msgs::msg::Joy joy_);
   void callbackWhillOdom(const Odometry::ConstSharedPtr & msg);
@@ -42,6 +44,7 @@ private:
     //,geometry_msgs::msg::Point & self_pose);
 
   rclcpp::Subscription<autoware_auto_perception_msgs::msg::PredictedObjects>::SharedPtr sub_detection_results_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_detection_points_;
 	rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr sub_joy_status_;
   rclcpp::Publisher<sensor_msgs::msg::Joy>::SharedPtr pub_control_status_;
 
@@ -61,12 +64,15 @@ private:
   Object object_;
 
   struct BoundaryCondition{
+    bool  detection_objects_;
+    bool  detection_points_;    
     double detection_margin_max_;
     double detection_margin_min_;
     double detection_area_front_;
     double detection_area_rear_;
     double detection_area_left_;
     double detection_area_right_;
+    int detection_point_num_min_;  
   };
   BoundaryCondition boundary_condition_;
 

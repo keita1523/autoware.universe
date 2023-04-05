@@ -6,6 +6,7 @@
   	<param from="$(var determination_control_values_param_path)"/>
   	<remap from="~/input/joy" to="/whill/states/joy"/>
   	<remap from="~/input/objects" to="/perception/object_recognition/objects"/>
+    <remap from="~/input/pointcloud" to="/perception/obstacle_segmentation/pointcloud"/>
     <remap from="~/output/vehicle_cmd" to="/whill/controller/joy"/>
 
   	<remap from="~/input/whill_odom" to="/whill/odom"/>
