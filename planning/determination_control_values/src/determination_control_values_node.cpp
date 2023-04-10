@@ -27,6 +27,7 @@ DeterminationControlValues::DeterminationControlValues(const rclcpp::NodeOptions
   RCLCPP_INFO(rclcpp::get_logger("my_test"), "detemination_launched");
   boundary_condition_.detection_objects_= declare_parameter("detection_objects",false); 
   boundary_condition_.detection_points_= declare_parameter("detection_points",false);
+  boundary_condition_.is_publishing_debug_detection_area_ = declare_parameter("is_publishing_debug_detection_area",false);
   boundary_condition_.detection_margin_min_= declare_parameter("detection_margin_min",1.0);
   boundary_condition_.detection_margin_max_= declare_parameter("detection_margin_max",10.0);
   boundary_condition_.detection_area_front_= declare_parameter("detection_area_front",10.0);
@@ -35,17 +36,20 @@ DeterminationControlValues::DeterminationControlValues(const rclcpp::NodeOptions
   boundary_condition_.detection_area_right_= declare_parameter("detection_area_right",4.0);
   boundary_condition_.detection_point_num_min_= declare_parameter("detection_point_num_min",100);
   //set Subscriber
-  sub_detection_results_ = this->create_subscription<autoware_auto_perception_msgs::msg::PredictedObjects>(
-		"~/input/objects", 1,
-		std::bind(&DeterminationControlValues::detectionResultCallback, this, std::placeholders::_1),
-    createSubscriptionOptions(this));
-
-  sub_detection_points_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-		"~/input/pointcloud", 1,
-		std::bind(&DeterminationControlValues::detectionPointsCallback, this, std::placeholders::_1),
-    createSubscriptionOptions(this));
-
-  RCLCPP_INFO(rclcpp::get_logger("my_test"), "object_check");
+  if(boundary_condition_.detection_objects_)
+  {
+    sub_detection_results_ = this->create_subscription<autoware_auto_perception_msgs::msg::PredictedObjects>(
+      "~/input/objects", 1,
+      std::bind(&DeterminationControlValues::detectionResultCallback, this, std::placeholders::_1),
+      createSubscriptionOptions(this));
+  }
+  if(boundary_condition_.detection_points_)
+  {
+    sub_detection_points_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+      "~/input/pointcloud", rclcpp::SensorDataQoS(),
+      std::bind(&DeterminationControlValues::detectionPointsCallback, this, std::placeholders::_1),
+      createSubscriptionOptions(this));
+  }
   sub_joy_status_ = this->create_subscription<sensor_msgs::msg::Joy>(
 		"~/input/joy", 1,
 		std::bind(&DeterminationControlValues::joyStatusCallback, this, std::placeholders::_1),
@@ -74,6 +78,11 @@ DeterminationControlValues::DeterminationControlValues(const rclcpp::NodeOptions
   set_steer.steering_tire_angle = 0.0;
   set_steer.stamp = Node::now();
   pub_steering_status_->publish(set_steer);
+
+  if(boundary_condition_.is_publishing_debug_detection_area_)
+  {
+    pub_debug_detection_area_ = this->create_publisher<PolygonStamped>("~/debug/detection_area", 1);
+  }
 }
 
 
@@ -94,6 +103,30 @@ bool DeterminationControlValues::transCoordinate(
   }
 }
 
+void DeterminationControlValues::publishDebugArea(tier4_autoware_utils::LinearRing2d footprint, const double z)
+{
+  if (!boundary_condition_.is_publishing_debug_detection_area_) return;
+
+  tier4_autoware_utils::Polygon2d footprint_polygon;
+  for (const auto& point : footprint) {
+    boost::geometry::append(footprint_polygon.outer(), point);
+  }
+  boost::geometry::correct(footprint_polygon);
+
+  PolygonStamped polygon_stamped;
+  polygon_stamped.header.frame_id = "velodyne_top";
+  polygon_stamped.header.stamp = Node::now();
+
+  for (const auto& point : footprint_polygon.outer()) {
+    geometry_msgs::msg::Point32 gp;
+    gp.x = point.x();
+    gp.y = point.y();
+    gp.z = z;
+    polygon_stamped.polygon.points.push_back(gp);
+  }
+  pub_debug_detection_area_->publish(polygon_stamped);
+}
+
 void DeterminationControlValues::detectionResultCallback(const autoware_auto_perception_msgs::msg::PredictedObjects msg)
 {
   if(!boundary_condition_.detection_objects_)return;
@@ -110,6 +143,7 @@ void DeterminationControlValues::detectionResultCallback(const autoware_auto_per
   object_detection_area.push_back(tier4_autoware_utils::Point2d{-boundary_condition_.detection_area_rear_, -boundary_condition_.detection_area_right_});
   object_detection_area.push_back(tier4_autoware_utils::Point2d{-boundary_condition_.detection_area_rear_,  boundary_condition_.detection_area_left_});
   object_detection_area = tier4_autoware_utils::transformVector(object_detection_area, tier4_autoware_utils::pose2transform(object_.lidar_pose_));
+  publishDebugArea(object_detection_area, object_.lidar_pose_.position.z);
 
   for(auto object: msg.objects){
     object_.obstacle_pose_ = object.kinematics.initial_pose_with_covariance.pose;
@@ -123,11 +157,7 @@ void DeterminationControlValues::detectionResultCallback(const autoware_auto_per
         (boost::geometry::within(object_point2d, object_detection_area) ) )
     {
       emagency_stop = true;
-      RCLCPP_WARN(rclcpp::get_logger("check_test"), "dist:%lf,obj:(%9lf,%9lf),lid:(%9lf,%9lf),area:(%9lf,%9lf)(%9lf,%9lf)(%9lf,%9lf)(%9lf,%9lf)",object_.distance_, object_point2d.x(), object_point2d.y(), object_.lidar_pose_.position.x, object_.lidar_pose_.position.y, object_detection_area[0][0], object_detection_area[0][1], object_detection_area[1][0], object_detection_area[1][1], object_detection_area[2][0], object_detection_area[2][1], object_detection_area[3][0], object_detection_area[3][1]); //test
-    }
-    else
-    {
-      RCLCPP_INFO(rclcpp::get_logger("check_test"), "dist:%lf,obj:(%9lf,%9lf),lid:(%9lf,%9lf),area:(%9lf,%9lf)(%9lf,%9lf)(%9lf,%9lf)(%9lf,%9lf)",object_.distance_, object_point2d.x(), object_point2d.y(), object_.lidar_pose_.position.x, object_.lidar_pose_.position.y, object_detection_area[0][0], object_detection_area[0][1], object_detection_area[1][0], object_detection_area[1][1], object_detection_area[2][0], object_detection_area[2][1], object_detection_area[3][0], object_detection_area[3][1]); //test
+      RCLCPP_INFO(rclcpp::get_logger("check_test"), "dist:%lf",object_.distance_); //test
     }
 
     if(emagency_stop)break;
@@ -143,6 +173,10 @@ void DeterminationControlValues::detectionPointsCallback(const sensor_msgs::msg:
   try {
     transform = tf_buffer_.lookupTransform(
       "velodyne_top", msg->header.frame_id, msg->header.stamp, rclcpp::Duration::from_seconds(0.1));
+      object_.lidar_pose_.position.x = transform.transform.translation.x;
+      object_.lidar_pose_.position.y = transform.transform.translation.y;
+      object_.lidar_pose_.position.z = transform.transform.translation.z;
+      object_.lidar_pose_.orientation = transform.transform.rotation;
   } catch (tf2::TransformException & e) {
     RCLCPP_INFO(rclcpp::get_logger("my_test"), "Failed to trans coordinate use topics as is.");
     emagency_stop = true;
@@ -156,6 +190,7 @@ void DeterminationControlValues::detectionPointsCallback(const sensor_msgs::msg:
   object_detection_area.push_back(tier4_autoware_utils::Point2d{-boundary_condition_.detection_area_rear_, -boundary_condition_.detection_area_right_});
   object_detection_area.push_back(tier4_autoware_utils::Point2d{-boundary_condition_.detection_area_rear_,  boundary_condition_.detection_area_left_});
   object_detection_area = tier4_autoware_utils::transformVector(object_detection_area, tier4_autoware_utils::pose2transform(object_.lidar_pose_));
+  publishDebugArea(object_detection_area, object_.lidar_pose_.position.z);
 
   Eigen::Affine3f isometry = tf2::transformToEigen(transform.transform).cast<float>();
   pcl::PointCloud<pcl::PointXYZ> transformed_pointcloud;
