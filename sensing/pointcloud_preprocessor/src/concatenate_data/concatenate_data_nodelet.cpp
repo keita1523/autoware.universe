@@ -130,7 +130,7 @@ PointCloudConcatenateDataSynchronizerComponent::PointCloudConcatenateDataSynchro
 
   // Publishers
   {
-    pub_output_ = this->create_publisher<PointCloud2>(
+     pub_output_ = this->create_publisher<PointCloud2>(
       "output", rclcpp::SensorDataQoS().keep_last(maximum_queue_size_));
   }
 
@@ -299,7 +299,7 @@ void PointCloudConcatenateDataSynchronizerComponent::publish()
 
   if (concat_cloud_ptr_) {
     auto output = std::make_unique<sensor_msgs::msg::PointCloud2>(*concat_cloud_ptr_);
-    pub_output_->publish(std::move(output));
+    // pub_output_->publish(std::move(output));
   } else {
     RCLCPP_WARN(this->get_logger(), "concat_cloud_ptr_ is nullptr, skipping pointcloud publish.");
   }
