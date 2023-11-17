@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>livox_pointcloud</name>
+  <version>0.0.0</version>
+  <description>
+    Point cloud conversions for Livox Avia LIDARs.
+  </description>
+
+  <maintainer email="emb4@todo.todo">emb4</maintainer>
+  <license>TODO: License declaration</license>
+
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclcpp_components</depend>
+  <depend>sensor_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+
+</package>
