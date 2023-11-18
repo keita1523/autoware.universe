@@ -25,6 +25,7 @@ public:
       auto period = std::chrono::duration_cast<std::chrono::milliseconds>(now - prev_time_).count();
       RCLCPP_INFO(rclcpp::get_logger("livox pointcloud"), "points num = %ld, period = %ld", msg->data.size() / msg->point_step, period);
       prev_time_ = now;
+
       output->header.stamp = this->now();
       transformed_point_cloud_publisher_->publish(*output);
       });
@@ -34,7 +35,6 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr transformed_point_cloud_publisher_;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr point_cloud_subscription_;
   tf2_ros::Buffer tf_buffer_;
-
 };
 
 int main(int argc, char** argv) {
